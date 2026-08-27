@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Asset Trading Operations Control Center | Justin Thom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#012624; --navy-2:#0A3B37; --navy-3:#155650;
+  --bronze:#1E8A75; --bronze-2:#8FE3CE; --bronze-soft:#D6F0E9;
+  --paper:#F4F8F7; --paper-2:#E8F0EE; --card:#FCFEFD;
+  --ink:#152423; --muted:#66756F; --line:#CFDDD9; --line-2:#E1EAE7;
+  --ok:#3E7A6B; --ok-soft:#E4EFEB;
+  --warn:#B8791B; --warn-soft:#F4E7CF;
+  --crit:#B3261E; --crit-soft:#F5DBD8;
+  --info:#2F5E9E; --info-soft:#DCE6F3;
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important}}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--navy-3)}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
+
+/* Header */
+.site-header{background:var(--navy);color:#fff;padding:18px 28px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:34px;height:34px;border:1.5px solid var(--bronze-2);display:grid;place-items:center;font-family:var(--mono);font-weight:600;color:var(--bronze-2);font-size:15px;letter-spacing:.5px}
+.brand-word{font-family:var(--mono);font-weight:600;letter-spacing:3px;font-size:14px;color:#fff}
+.site-name{text-align:center;font-weight:500;font-size:16px;letter-spacing:.3px}
+.site-role{text-align:right;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--bronze-2);line-height:1.6}
+@media (max-width:760px){.site-header{grid-template-columns:1fr;text-align:center;gap:8px}.brand{justify-content:center}.site-role{text-align:center}}
+
+/* Title band */
+.title-band{background:var(--navy-2);color:#fff;padding:22px 28px;border-top:1px solid var(--navy-3)}
+.title-band h1{font-size:22px;font-weight:500;letter-spacing:.2px}
+.title-band p{color:#BFD8D3;max-width:900px;margin-top:6px}
+.asof{margin-top:12px;display:flex;flex-wrap:wrap;gap:22px;font-family:var(--mono);font-size:11.5px;color:#BFD8D3}
+.asof b{color:#fff;font-weight:500}
+
+/* Tabs */
+.tabs{background:var(--paper-2);border-bottom:1px solid var(--line);padding:14px 28px 0;display:flex;gap:8px}
+.tab{background:var(--card);border:1px solid var(--line);border-bottom:none;border-radius:3px 3px 0 0;padding:11px 20px 10px;font-size:14px;font-weight:500;color:var(--muted);letter-spacing:.2px;margin-bottom:-1px}
+.tab[aria-selected="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab:hover{color:var(--navy)}
+.tab[aria-selected="true"]:hover{color:#fff}
+.tab small{font-family:var(--mono);font-size:11px;margin-left:8px;color:var(--bronze)}
+.tab[aria-selected="true"] small{color:var(--bronze-2)}
+
+main{padding:26px 28px 40px;max-width:1400px;margin:0 auto}
+.panel[hidden]{display:none}
+
+/* Layout helpers */
+.section{margin-bottom:34px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.section-head h2{font-size:16px;font-weight:600;color:var(--navy)}
+.section-head p{color:var(--muted);font-size:13px}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--bronze);margin-bottom:6px}
+.card{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:980px){.grid-2{grid-template-columns:1fr}}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.kpi{background:var(--card);padding:14px 16px}
+.kpi .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.kpi .val{font-family:var(--mono);font-size:22px;font-weight:500;margin-top:4px;color:var(--navy)}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi.crit .val{color:var(--crit)}.kpi.warn .val{color:var(--warn)}.kpi.ok .val{color:var(--ok)}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* Recon matrix */
+.matrix-wrap{overflow-x:auto}
+.matrix{border-collapse:separate;border-spacing:0;width:100%;min-width:720px;font-family:var(--mono);font-size:12px}
+.matrix th{font-weight:500;color:var(--muted);text-align:center;padding:8px 6px;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.matrix th:first-child{text-align:left}
+.matrix td{padding:5px}
+.matrix td:first-child{font-family:var(--sans);font-weight:500;color:var(--navy);white-space:nowrap;padding-right:14px}
+.matrix td:first-child small{display:block;font-family:var(--mono);font-weight:400;font-size:10px;color:var(--muted)}
+.cell{width:100%;height:46px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:var(--mono);font-size:12px;transition:transform .12s}
+.cell:hover{transform:translateY(-1px);border-color:var(--navy)}
+.cell.active{outline:2px solid var(--navy);outline-offset:-2px}
+.cell .n{font-weight:600;font-size:14px}
+.cell .t{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.cell.ok{background:var(--ok-soft);color:var(--ok)}
+.cell.low{background:var(--info-soft);color:var(--info)}
+.cell.medium{background:var(--warn-soft);color:var(--warn)}
+.cell.high{background:#F2C9BE;color:#8E2A1F}
+.cell.critical{background:var(--crit);color:#fff}
+.cell.critical .t{color:#F3D5D2}
+.cell.na{background:transparent;border-style:dashed;color:var(--line);cursor:default}
+.cell.na:hover{transform:none;border-color:var(--line)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
+.legend .l-ok::before{background:var(--ok-soft)}.legend .l-low::before{background:var(--info-soft)}.legend .l-med::before{background:var(--warn-soft)}.legend .l-high::before{background:#F2C9BE}.legend .l-crit::before{background:var(--crit)}
+
+/* Filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filters label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.chip{border:1px solid var(--line);background:var(--card);padding:5px 11px;font-size:12.5px;color:var(--ink);border-radius:2px}
+.chip[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chip.clear{border-style:dashed;color:var(--muted)}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);background:var(--card)}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--paper-2);white-space:nowrap}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td.num,.tbl th.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.tbl td.mono{font-family:var(--mono);white-space:nowrap}
+.tbl tr.row{cursor:pointer}
+.tbl tr.row:hover td{background:#EEF5F3}
+.tbl tr.detail td{background:#EEF5F3;padding:12px 16px 14px 44px;border-bottom:1px solid var(--line)}
+#breaks td,#breaks th{white-space:nowrap}
+#breaks tr.detail td{white-space:normal}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;font-size:12.5px}
+.detail-grid .k{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.figs{display:grid;grid-template-columns:repeat(3,auto);gap:6px 28px;font-family:var(--mono);font-size:12.5px;width:max-content}
+.figs span:first-child{color:var(--muted)}
+@media (max-width:760px){.detail-grid{grid-template-columns:1fr}}
+.neg{color:var(--crit)}.pos{color:var(--ok)}
+
+/* Badges */
+.badge{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.badge.critical{background:var(--crit);color:#fff}
+.badge.high{background:#F2C9BE;color:#8E2A1F}
+.badge.medium{background:var(--warn-soft);color:var(--warn)}
+.badge.low{background:var(--info-soft);color:var(--info)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.hold{background:var(--crit-soft);color:var(--crit)}
+.badge.neutral{background:var(--paper-2);color:var(--muted)}
+.badge.navy{background:var(--navy);color:#fff}
+.age-chip{font-family:var(--mono);font-size:11.5px}
+.age-chip.old{color:var(--crit);font-weight:600}
+
+/* Transfer pipeline */
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:center;min-width:280px}
+.pipe .st{position:relative;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding-top:16px}
+.pipe .st::before{content:"";position:absolute;top:4px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;border:1.5px solid var(--line);background:var(--card)}
+.pipe .st::after{content:"";position:absolute;top:8.5px;left:calc(50% + 6px);right:calc(-50% + 6px);height:1.5px;background:var(--line)}
+.pipe .st:last-child::after{display:none}
+.pipe .st.done::before{background:var(--navy);border-color:var(--navy)}
+.pipe .st.done::after{background:var(--navy)}
+.pipe .st.cur::before{background:var(--bronze);border-color:var(--bronze);box-shadow:0 0 0 3px var(--bronze-soft)}
+.pipe .st.done,.pipe .st.cur{color:var(--navy)}
+.pipe .st.stall::before{background:var(--crit);border-color:var(--crit);box-shadow:0 0 0 3px var(--crit-soft)}
+.pipe .st.stall{color:var(--crit)}
+
+/* Report */
+.report{font-family:var(--mono);font-size:12px;line-height:1.65;white-space:pre-wrap;background:var(--navy);color:#EDFFFE;padding:18px 20px;border:1px solid var(--navy-3)}
+.report-tools{display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px}
+.btn{border:1px solid var(--navy);background:var(--navy);color:#fff;padding:7px 14px;font-size:12.5px;border-radius:2px}
+.btn:hover{background:var(--navy-2);color:#fff}
+
+/* Automation strip */
+.auto-list{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-top:1px solid var(--line)}
+@media (max-width:760px){.auto-list{grid-template-columns:1fr}}
+.auto-item{background:var(--card);padding:12px 16px}
+.auto-item h4{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.auto-item .row{display:grid;grid-template-columns:80px 1fr;gap:8px;font-size:12.5px;margin-top:3px}
+.auto-item .row b{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;color:var(--muted);padding-top:2px}
+
+/* Financing */
+.util{height:8px;background:var(--paper-2);border:1px solid var(--line);position:relative;min-width:110px}
+.util i{position:absolute;left:0;top:0;bottom:0;background:var(--navy)}
+.util.high i{background:var(--bronze)}
+.calc{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.check{font-family:var(--mono);font-size:11.5px;white-space:nowrap;display:block}
+.check.y{color:var(--ok)}.check.n{color:var(--crit);font-weight:600}.check.p{color:var(--warn)}
+details.acc{border:1px solid var(--line);background:var(--card);margin-top:10px}
+details.acc summary{cursor:pointer;padding:12px 16px;font-size:13px;font-weight:500;color:var(--navy);list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.acc summary::-webkit-details-marker{display:none}
+details.acc summary::after{content:"Show";font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--bronze)}
+details.acc[open] summary::after{content:"Hide"}
+details.acc .tbl-wrap{border:none;border-top:1px solid var(--line)}
+.worked{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;padding:14px 18px;font-size:12.5px;align-items:baseline}
+.worked .k{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.worked .v{font-family:var(--mono)}
+
+/* Notes */
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--bronze);padding:8px 14px;background:var(--card)}
+.footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 28px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.footer .mono{font-family:var(--mono);font-size:11px;letter-spacing:1px}
+</style>
+<!-- ANALYTICS: paste the Google tag snippet for the Auros stream here, before </head>. Nothing fires until it is added. -->
+</head>
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <img src="https://cdn.prod.website-files.com/695e7fa0a8a6762fbe0a0b48/696f9b6aee21561411fb6f01_aruos-white.svg" alt="" style="height:26px" onerror="this.style.display='none'">
+    <span class="brand-word">AUROS</span>
+  </div>
+  <div class="site-name">Justin Thom</div>
+  <div class="site-role"><span style="color:var(--bronze-2);font-weight:600;font-size:13px">Application</span><br>Middle Office Analyst<br>Trading Operations</div>
+</header>
+
+<div class="title-band">
+  <h1>Digital Asset Trading Operations Control Center</h1>
+  <p>A simulated middle office operating tool. Reconciles internal books against exchange and on-chain records, manages the break queue and transfer pipeline, and tracks credit facilities from drawdown to invoice and payment.</p>
+  <div class="asof">
+    <span>Run: <b>Daily 07:00 ET</b></span>
+    <span>As of: <b>26 Aug 2026 07:00 ET</b></span>
+    <span>Coverage: <b id="coverage"></b></span>
+    <span>Data: <b>Simulated</b></span>
+  </div>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Modules">
+  <button class="tab" role="tab" aria-selected="true" aria-controls="panel-recon" id="tab-recon">Exchange Reconciliation <small id="tab-recon-count"></small></button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-fin" id="tab-fin">Financing Ledger <small id="tab-fin-count"></small></button>
+</nav>
+
+<main>
+
+<!-- ================= RECONCILIATION ================= -->
+<section class="panel" id="panel-recon" role="tabpanel" aria-labelledby="tab-recon">
+
+  <div class="section">
+    <div class="kpis" id="recon-kpis"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Reconciliation matrix</h2>
+      </div>
+      <p>Click a cell to filter the queue.</p>
+    </div>
+    <div class="card">
+      <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+      <div class="legend">
+        <span class="l-ok">Matched or within tolerance</span>
+        <span class="l-low">Low</span>
+        <span class="l-med">Medium</span>
+        <span class="l-high">High</span>
+        <span class="l-crit">Critical</span>
+        <span style="margin-left:auto">Dashed: control not applicable to venue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Break queue</h2>
+      </div>
+      <p id="queue-caption"></p>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="breaks">
+        <thead><tr>
+          <th>ID</th><th>Venue / control</th><th>Type / instrument</th>
+          <th class="num">Difference</th><th class="num">Value</th>
+          <th>Age</th><th>Severity / status</th><th>Owner</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Transfer monitor</h2>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="transfers">
+        <thead><tr>
+          <th>Ref</th><th>Asset</th><th class="num">Amount</th><th>From</th><th>To</th><th>Network</th><th>Pipeline</th><th>Last event</th><th>Elapsed</th><th>Status</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Daily exception report</h2>
+      </div>
+    </div>
+    <div class="report-tools">
+      <button class="btn" id="copy">Copy report</button>
+    </div>
+    <pre class="report" id="report"></pre>
+    <details class="acc">
+      <summary>Manual Processes Automated</summary>
+      <div class="auto-list" id="auto"></div>
+    </details>
+  </div>
+
+</section>
+
+<!-- ================= FINANCING ================= -->
+<section class="panel" id="panel-fin" role="tabpanel" aria-labelledby="tab-fin" hidden>
+
+  <div class="section">
+    <div class="kpis" id="fin-kpis"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Facility register</h2>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="facilities">
+        <thead><tr>
+          <th>Lender</th><th>Asset</th><th class="num">Facility</th><th class="num">Drawn</th><th class="num">Available</th><th>Utilization</th><th>Rate / basis</th><th>Interest</th><th>Maturity</th><th class="num">Accrued, unpaid</th><th>Status</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <details class="acc">
+      <summary>Accrual calculation and drawdown ledger</summary>
+      <div class="worked" id="worked"></div>
+      <div class="tbl-wrap">
+        <table class="tbl" id="drawdowns">
+          <thead><tr>
+            <th>Facility</th><th>Draw</th><th>Credited</th><th class="num">Principal</th><th>Rate</th><th>Accrued from</th><th class="num">Days</th><th>Calculation</th><th class="num">Accrued to date</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>Financing exceptions and upcoming payments</h2>
+      </div>
+      <p>In this simulated case, month-end invoices arrive a few days early and project accrual through the final day of the period.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="payments">
+        <thead><tr>
+          <th>Due</th><th>Lender</th><th>Item</th><th class="num">Internal</th><th class="num">Lender invoice</th><th>Difference and cause</th><th>Verification</th><th>Status</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:10px"><b>Release conditions.</b> Whitelisted address, network per agreement, invoice reconciled, two of three approvals. Instruction changes verified by callback before the whitelist is updated.</p>
+  </div>
+
+</section>
+
+</main>
+
+<footer class="footer">
+  <div>Simulated data. No live feeds, positions, or counterparties. Work sample for the Auros Middle Office Analyst application.</div>
+  <div class="mono">JUSTIN THOM · 2026</div>
+</footer>
+
+<script>
+/* ---------- Data ---------- */
+const ASOF = new Date('2026-08-26T11:00:00Z'); // 07:00 ET
+const PX = {BTC:112400, ETH:4180, SOL:196, USDT:1, USDC:1, USD:1};
+const CHAINS = ['Bitcoin','Ethereum','Solana','Tron'];
+const VENUES = ['Binance','OKX','Bybit','Coinbase','Deribit','On-chain'];
+const CATS = ['Balances','Positions','Trades','Fees','Funding','Transfers'];
+const NA = {Coinbase:['Positions','Funding'], 'On-chain':['Positions','Trades','Funding']};
+const SEV_RANK = {critical:4, high:3, medium:2, low:1};
+
+// Records compared this run, per venue and control. Balances = asset lines; positions = open instruments;
+// trades = fills since last run; fees = fee lines; funding = settlement events; transfers = in-flight or settled today.
+const RECORDS = {
+  Binance:  {Balances:38, Positions:14, Trades:1462, Fees:1462, Funding:42, Transfers:2},
+  OKX:      {Balances:31, Positions:11, Trades:918,  Fees:918,  Funding:33, Transfers:2},
+  Bybit:    {Balances:24, Positions:9,  Trades:611,  Fees:611,  Funding:27, Transfers:1},
+  Coinbase: {Balances:12, Positions:0,  Trades:204,  Fees:204,  Funding:0,  Transfers:2},
+  Deribit:  {Balances:6,  Positions:57, Trades:388,  Fees:388,  Funding:6,  Transfers:2},
+  'On-chain':{Balances:19, Positions:0,  Trades:0,    Fees:71,   Funding:0,  Transfers:3},
+};
+
+// Tolerance: a difference is a break only if it exceeds both the dust threshold and the USD floor.
+const TOL = {dust:{BTC:0.00001, ETH:0.0001, SOL:0.001, USDT:0.01, USDC:0.01}, usd:5};
+
+const BREAKS = [
+ {id:'B-0826-01', venue:'OKX', cat:'Trades', type:'Missing trade', asset:'BTC-USDT-SWAP', unit:'BTC', internal:0, venueVal:0.42,
+  detected:'2026-08-26T08:14:00Z', sev:'critical', status:'Open', owner:'J. Thom',
+  cause:'Fill during websocket disconnect (04:12 to 04:16 ET). REST replay for the gap not run. 0.42 BTC on the venue, not in the book. Desk has unhedged exposure.',
+  action:'Replay fills 04:10 to 04:20 ET, book, notify desk to check hedge. Clears B-0826-08.',
+  rule:'Auto-replay fills via REST after any websocket reconnect and diff against the book.'},
+ {id:'B-0826-02', venue:'Binance', cat:'Trades', type:'Duplicate booking', asset:'ETH/USDT', unit:'ETH', internal:76.0, venueVal:38.0,
+  detected:'2026-08-26T06:47:00Z', sev:'high', status:'Investigating', owner:'J. Thom',
+  cause:'Order ack timed out, retry booked as a new fill. Both records carry the same exchange trade ID.',
+  action:'Delete the duplicate. Confirm position and P&L match venue.',
+  rule:'Reject any booking with an existing exchange trade ID.'},
+ {id:'B-0826-03', venue:'Bybit', cat:'Positions', type:'Quantity mismatch', asset:'ETH-PERP', unit:'ETH', internal:812.5, venueVal:811.9,
+  detected:'2026-08-26T11:00:00Z', sev:'medium', status:'Investigating', owner:'Trading desk',
+  cause:'Partial fill booked at order quantity (1.2 ETH), not filled quantity (0.6 ETH).',
+  action:'Correct to 0.6 ETH. Confirm residual was cancelled.',
+  rule:'Book from execution reports only, never order quantity.'},
+ {id:'B-0826-04', venue:'Deribit', cat:'Positions', type:'Expiry not settled', asset:'BTC-21AUG26-110000-C', unit:'contracts', internal:10, venueVal:0,
+  detected:'2026-08-21T08:05:00Z', sev:'high', status:'Open', owner:'J. Thom',
+  cause:'21AUG26 expiry settled on venue Friday 08:00 UTC. Book still carries 10 contracts, settlement not booked.',
+  action:'Book settlement at delivery price, close the line. Check other 21AUG26 strikes.',
+  rule:'Expiry job books settlement at 08:05 UTC and flags any expired instrument with an open position.'},
+ {id:'B-0826-05', venue:'Binance', cat:'Fees', type:'Fee mismatch', asset:'BTC/USDT spot', unit:'USDT', internal:1842.10, venueVal:1933.20,
+  detected:'2026-08-26T11:00:00Z', sev:'low', status:'Open', owner:'J. Thom',
+  cause:'Fee config is static at the old VIP tier. Venue moved to a higher taker rate at the 00:00 UTC tier reset.',
+  action:'Update fee config, rebook session fees.',
+  rule:'Pull fee tier from the venue daily.'},
+ {id:'B-0826-06', venue:'Bybit', cat:'Funding', type:'Timing', asset:'ETH-PERP', unit:'USDT', internal:0, venueVal:1204.60,
+  detected:'2026-08-26T08:01:00Z', sev:'low', status:'Auto-clear expected', owner:'System',
+  cause:'08:00 UTC funding posted after the ledger pull ran.',
+  action:'None. Clears on the 16:05 UTC pull.',
+  rule:'Pull funding at settlement plus five minutes.'},
+ {id:'B-0826-07', venue:'OKX', cat:'Transfers', type:'Unsettled transfer', asset:'USDT, Binance to OKX (Tron)', unit:'USDT', internal:2500000, venueVal:0,
+  detected:'2026-08-26T10:14:00Z', sev:'high', status:'Pending venue', owner:'Treasury',
+  cause:'Broadcast 06:12 ET, confirmed on Tron 06:14 ET (19 confirmations). Not credited by OKX at 07:00. OKX median for Tron USDT is 9 min.',
+  action:'Ticket to OKX with tx hash. Confirm deposit address is current.',
+  rule:'Alert when a confirmed transfer sits uncredited past twice the venue median.'},
+ {id:'B-0826-08', venue:'OKX', cat:'Balances', type:'Balance mismatch', asset:'USDT', unit:'USDT', internal:31448211.50, venueVal:31401057.19,
+  detected:'2026-08-26T11:00:00Z', sev:'medium', status:'Linked to B-0826-01', owner:'J. Thom',
+  cause:'Cash leg of the unbooked 0.42 BTC fill (47,130.30) plus taker fee (24.01).',
+  action:'Clears with B-0826-01.',
+  rule:'Explain balance breaks from open trade and fee breaks before raising a new item.'},
+ {id:'B-0826-09', venue:'On-chain', cat:'Balances', type:'Unmatched inbound', asset:'USDT, Tron treasury (TXk…9pQ2)', unit:'USDT', internal:6000000, venueVal:6750000,
+  detected:'2026-08-26T09:02:00Z', sev:'high', status:'Investigating', owner:'Treasury',
+  cause:'750,000 USDT from an unknown address. No expected settlement matches.',
+  action:'Desk to confirm any unbooked OTC leg. Escalate to compliance if unmatched by end of day.',
+  rule:'Match every inbound to an expected settlement. Unmatched above 10k USD alerts desk and compliance.'},
+ // Resolved this run.
+ {id:'B-0826-10', venue:'Bybit', cat:'Fees', type:'Fee currency mismatch', asset:'USDC-PERP', unit:'USDT', internal:0, venueVal:612.44,
+  detected:'2026-08-26T07:20:00Z', sev:'low', status:'Resolved', owner:'J. Thom',
+  cause:'Fee charged in USDT, booked in USDC.',
+  action:'Rebooked in USDT.',
+  rule:'Take fee currency from the venue record.'},
+ {id:'B-0826-11', venue:'OKX', cat:'Funding', type:'Funding mismatch', asset:'BTC-USDT-SWAP', unit:'USDT', internal:-3412.18, venueVal:-3388.05,
+  detected:'2026-08-26T08:10:00Z', sev:'low', status:'Resolved', owner:'J. Thom',
+  cause:'Internal estimate used the 07:59 UTC position. Venue applies funding at the settlement timestamp; desk cut size in the last minute.',
+  action:'Booked to venue figure.',
+  rule:'Book funding from the venue bills endpoint. Internal calc is a check only.'},
+];
+
+// Inside tolerance, auto-closed.
+const WITHIN_TOL = [
+ {venue:'Deribit', cat:'Balances', asset:'BTC', diff:0.0000031, unit:'BTC'},
+ {venue:'Deribit', cat:'Funding', asset:'BTC-PERPETUAL', diff:0.00003, unit:'BTC', note:'continuous accrual vs eight-hour approximation'},
+ {venue:'Binance', cat:'Balances', asset:'USDT', diff:0.0042, unit:'USDT'},
+ {venue:'Bybit', cat:'Balances', asset:'USDT', diff:0.31, unit:'USDT'},
+];
+
+const TRANSFERS = [
+ {ref:'T-01', asset:'USDT', amt:2500000, from:'Binance', to:'OKX', net:'Tron', stage:3, last:'2026-08-26T10:14:00Z', lastLabel:'Confirmed on-chain', median:9, stall:true, note:'Uncredited 46 min vs 9 min median. Break B-0826-07.'},
+ {ref:'T-02', asset:'USDC', amt:250000, from:'Coinbase', to:'Treasury wallet', net:'Ethereum', stage:1, last:'2026-08-26T10:40:00Z', lastLabel:'Approved (1 of 2)', median:20, stall:false, note:'Awaiting second approver.'},
+ {ref:'T-03', asset:'BTC', amt:12.5, from:'Deribit', to:'Binance', net:'Bitcoin', stage:2, last:'2026-08-26T10:52:00Z', lastLabel:'Broadcast, 1 confirmation', median:30, stall:false, note:'Credits at 3 confirmations.'},
+ {ref:'T-04', asset:'USDT', amt:4000000, from:'OKX', to:'Bybit', net:'Tron', stage:4, last:'2026-08-26T07:31:00Z', lastLabel:'Credited', median:8, stall:false, note:'Complete.'},
+ {ref:'T-05', asset:'SOL', amt:45000, from:'Treasury wallet', to:'Bybit', net:'Solana', stage:4, last:'2026-08-26T09:48:00Z', lastLabel:'Credited', median:4, stall:false, note:'Complete.'},
+];
+const STAGES = ['Requested','Approved','Broadcast','Confirmed','Credited'];
+
+/* ---------- Financing ---------- */
+const FACILITIES = [
+ {id:'F1', lender:'Meridian Digital Credit', asset:'USDT', size:25000000, rate:0.0925, basis:360, freq:'Monthly, last day', maturity:'2026-11-30', network:'Ethereum', addr:'0x7c4e…d2a1', term:'Term',
+  draws:[{n:'D1', requested:'2026-06-12', credited:'2026-06-12', amt:12000000},{n:'D2', requested:'2026-08-14', credited:'2026-08-15', amt:6000000}],
+  paidThrough:'2026-08-01'},
+ {id:'F2', lender:'Harbor Lending', asset:'BTC', size:400, rate:0.045, basis:365, freq:'Monthly, in kind', maturity:'2027-01-15', network:'Bitcoin', addr:'bc1q…7xf4', term:'Term',
+  draws:[{n:'D1', requested:'2026-03-01', credited:'2026-03-01', amt:150},{n:'D2', requested:'2026-07-10', credited:'2026-07-10', amt:100}],
+  paidThrough:'2026-08-01'},
+ {id:'F3', lender:'Atlas Prime Finance', asset:'USDC', size:15000000, rate:0.0810, rateNote:'3.85% benchmark + 4.25%, resets 1st', basis:360, freq:'Monthly, last day', maturity:'Open, 7-day call', network:'Ethereum', addr:'0x91b0…4c7e', term:'Open',
+  draws:[{n:'D1', requested:'2026-05-20', credited:'2026-05-20', amt:12500000}],
+  paidThrough:'2026-08-01'},
+ {id:'F4', lender:'Northgate Capital', asset:'ETH', size:5000, rate:0.039, basis:365, freq:'Quarterly and at maturity', maturity:'2026-09-30', network:'Ethereum', addr:'0xa4d2…e830', term:'Term',
+  draws:[{n:'D1', requested:'2026-04-30', credited:'2026-04-30', amt:2000},{n:'D2', requested:'2026-06-30', credited:'2026-06-30', amt:1200}],
+  paidThrough:'2026-07-01'},
+];
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const fmt = (n, d=2) => n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtA = (n, unit) => {
+  if (unit==='BTC') return fmt(n, 5);
+  if (unit==='ETH' || unit==='SOL') return fmt(n, 3);
+  if (unit==='contracts') return fmt(n, 0);
+  return fmt(n, 2);
+};
+const usd = n => (n<0?'-':'') + '$' + fmt(Math.abs(n), Math.abs(n)>=1000?0:(Math.abs(n)>0&&Math.abs(n)<0.01)?4:2);
+const dayDiff = (a,b) => Math.round((new Date(b) - new Date(a))/86400000);
+const hoursAgo = iso => (ASOF - new Date(iso))/3600000;
+const ageStr = h => h<1 ? Math.round(h*60)+' min' : h<48 ? h.toFixed(1)+' h' : (h/24).toFixed(1)+' d';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dShort = iso => { const d=new Date(iso); return String(d.getUTCDate()).padStart(2,'0')+' '+MON[d.getUTCMonth()]; };
+const dLong = iso => dShort(iso)+' '+new Date(iso).getUTCFullYear();
+const tET = iso => { const d=new Date(new Date(iso).getTime()-4*3600000); return d.toISOString().slice(11,16)+' ET'; };
+const priceOf = unit => PX[unit] ?? 0;
+const unitPx = b => b.unit==='contracts' ? 0.01*PX.BTC : priceOf(b.unit);
+
+BREAKS.forEach(b => {
+  b.diff = b.venueVal - b.internal;
+  b.diffUsd = Math.abs(b.diff)*unitPx(b);
+  b.ageH = hoursAgo(b.detected);
+  b.open = b.status!=='Resolved';
+});
+WITHIN_TOL.forEach(w => { w.usd = w.diff*priceOf(w.unit); });
+const RECORD_TOTAL = Object.values(RECORDS).reduce((s,v)=>s+Object.values(v).reduce((a,b)=>a+b,0),0);
+const EXCH_COUNT = VENUES.length-1;
+
+/* ============================================================
+   RECON: KPIs
+   ============================================================ */
+function grossExceptionValue(){
+  // Open items only. Linked items are excluded so the same root cause is not counted twice.
+  return BREAKS.filter(b=>b.open && !b.status.startsWith('Linked')).reduce((s,b)=>s+b.diffUsd,0);
+}
+function renderReconKpis(){
+  const open = BREAKS.filter(b=>b.open);
+  const crit = open.filter(b=>b.sev==='critical').length;
+  const high = open.filter(b=>b.sev==='high').length;
+  const flagged = TRANSFERS.filter(t=>t.stall).length;
+  const inflight = TRANSFERS.filter(t=>t.stage<4).length;
+  $('#recon-kpis').innerHTML = `
+    <div class="kpi"><div class="lab">Records reconciled</div><div class="val">${fmt(RECORD_TOTAL,0)}</div><div class="sub">across ${EXCH_COUNT} exchanges and ${CHAINS.length} chains, six controls</div></div>
+    <div class="kpi ${crit?'crit':''}"><div class="lab">Open breaks</div><div class="val">${open.length}</div><div class="sub">${crit} critical, ${high} high, ${open.length-crit-high} medium or low</div></div>
+    <div class="kpi warn"><div class="lab">Gross exception value</div><div class="val">${usd(grossExceptionValue())}</div><div class="sub">open items at 26 Aug marks, linked items excluded</div></div>
+    <div class="kpi ${flagged?'crit':''}"><div class="lab">Transfers flagged</div><div class="val">${flagged}</div><div class="sub">of ${inflight} in flight, ${TRANSFERS.length-inflight} settled today</div></div>`;
+  $('#tab-recon-count').textContent = open.length + ' open';
+  $('#coverage').textContent = `${EXCH_COUNT} exchanges, ${CHAINS.length} chains`;
+}
+
+/* ============================================================
+   RECON: Matrix
+   ============================================================ */
+let filter = {venue:null, cat:null, sev:null, status:'open'};
+
+function cellState(v,c){
+  if ((NA[v]||[]).includes(c)) return {cls:'na'};
+  const items = BREAKS.filter(b=>b.venue===v && b.cat===c);
+  const open = items.filter(b=>b.open);
+  if (!open.length){
+    const resolved = items.length;
+    const tol = WITHIN_TOL.filter(w=>w.venue===v&&w.cat===c).length;
+    return {cls:'ok', n: resolved? resolved : (tol? tol : '·'), t: resolved?'resolved': tol?'in tol':'matched'};
+  }
+  const worst = open.reduce((m,b)=>SEV_RANK[b.sev]>SEV_RANK[m]?b.sev:m,'low');
+  return {cls:worst, n:open.length, t:open.length>1?'breaks':'break'};
+}
+
+function renderMatrix(){
+  let h = '<thead><tr><th>Venue</th>' + CATS.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  VENUES.forEach(v=>{
+    const n = Object.values(RECORDS[v]).reduce((a,b)=>a+b,0);
+    h += `<tr><td>${v}<small>${fmt(n,0)} records</small></td>`;
+    CATS.forEach(c=>{
+      const s = cellState(v,c);
+      const active = filter.venue===v && filter.cat===c ? ' active':'';
+      if (s.cls==='na') h += `<td><div class="cell na" aria-hidden="true">n/a</div></td>`;
+      else h += `<td><button class="cell ${s.cls}${active}" data-v="${v}" data-c="${c}" aria-label="${v} ${c}: ${s.n} ${s.t}" title="${RECORDS[v][c]} records compared"><span class="n">${s.n}</span><span class="t">${s.t}</span></button></td>`;
+    });
+    h += '</tr>';
+  });
+  $('#matrix').innerHTML = h + '</tbody>';
+  $('#matrix').querySelectorAll('button.cell').forEach(btn=>btn.addEventListener('click',()=>{
+    const v=btn.dataset.v, c=btn.dataset.c;
+    if (filter.venue===v && filter.cat===c){ filter.venue=null; filter.cat=null; }
+    else { filter.venue=v; filter.cat=c; filter.status='all'; }
+    renderMatrix(); renderFilters(); renderBreaks();
+    document.getElementById('filters').scrollIntoView({block:'nearest'});
+  }));
+}
+
+/* ============================================================
+   RECON: Filters and queue
+   ============================================================ */
+function renderFilters(){
+  const sevs=['critical','high','medium','low'];
+  let h = '<label>Severity</label>' + sevs.map(s=>`<button class="chip" data-k="sev" data-val="${s}" aria-pressed="${filter.sev===s}">${s[0].toUpperCase()+s.slice(1)}</button>`).join('');
+  h += '<label style="margin-left:10px">Status</label>' + [['open','Open only'],['all','All']].map(([k,l])=>`<button class="chip" data-k="status" data-val="${k}" aria-pressed="${filter.status===k}">${l}</button>`).join('');
+  if (filter.venue) h += `<button class="chip clear" data-k="clearcell">${filter.venue} · ${filter.cat} ×</button>`;
+  $('#filters').innerHTML = h;
+  $('#filters').querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>{
+    const k=ch.dataset.k;
+    if (k==='clearcell'){ filter.venue=null; filter.cat=null; }
+    else if (k==='sev'){ filter.sev = filter.sev===ch.dataset.val ? null : ch.dataset.val; }
+    else filter.status = ch.dataset.val;
+    renderMatrix(); renderFilters(); renderBreaks();
+  }));
+}
+
+function statusBadge(s){
+  if (s==='Resolved') return `<span class="badge ok">Resolved</span>`;
+  if (s==='Auto-clear expected') return `<span class="badge low">Auto-clear</span>`;
+  if (s==='Pending venue') return `<span class="badge medium">Pending venue</span>`;
+  if (s.startsWith('Linked')) return `<span class="badge neutral" title="${s}">Linked</span>`;
+  if (s==='Investigating') return `<span class="badge navy">Investigating</span>`;
+  return `<span class="badge neutral">${s}</span>`;
+}
+
+function renderBreaks(){
+  let rows = BREAKS.slice().sort((a,b)=>SEV_RANK[b.sev]-SEV_RANK[a.sev] || b.ageH-a.ageH);
+  if (filter.status==='open') rows = rows.filter(b=>b.open);
+  if (filter.sev) rows = rows.filter(b=>b.sev===filter.sev);
+  if (filter.venue) rows = rows.filter(b=>b.venue===filter.venue && b.cat===filter.cat);
+  const tb = $('#breaks tbody');
+  tb.innerHTML = rows.map(b=>{
+    const sign = b.diff>0?'+':'';
+    return `<tr class="row" data-id="${b.id}" tabindex="0" aria-expanded="false">
+      <td class="mono">${b.id}</td>
+      <td>${b.venue}<div class="calc">${b.cat}</div></td>
+      <td>${b.type}<div class="calc">${b.asset}</div></td>
+      <td class="num ${b.diff<0?'neg':''}">${sign}${fmtA(b.diff,b.unit)} ${b.unit}</td>
+      <td class="num">${usd(b.diffUsd)}</td>
+      <td><span class="age-chip ${b.ageH>24&&b.open?'old':''}">${ageStr(b.ageH)}</span></td>
+      <td><span class="badge ${b.sev}">${b.sev}</span><div style="margin-top:4px">${statusBadge(b.status)}</div></td>
+      <td>${b.owner}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="color:var(--muted);padding:18px">No breaks match this filter.</td></tr>';
+  tb.querySelectorAll('tr.row').forEach(tr=>{
+    const toggle=()=>{
+      const next = tr.nextElementSibling;
+      if (next && next.classList.contains('detail')){ next.remove(); tr.setAttribute('aria-expanded','false'); return; }
+      const b = BREAKS.find(x=>x.id===tr.dataset.id);
+      const d = document.createElement('tr'); d.className='detail';
+      d.innerHTML = `<td colspan="8"><div class="detail-grid">
+        <div><div class="k">Figures</div><div class="figs">
+          <span>Internal book</span><span>${fmtA(b.internal,b.unit)} ${b.unit}</span><span></span>
+          <span>Venue record</span><span>${fmtA(b.venueVal,b.unit)} ${b.unit}</span><span></span>
+          <span>Difference</span><span class="${b.diff<0?'neg':''}">${b.diff>0?'+':''}${fmtA(b.diff,b.unit)} ${b.unit}</span><span>${usd(b.diffUsd)}</span>
+        </div><div class="k" style="margin-top:12px">Detected</div>${dLong(b.detected)} ${tET(b.detected)}</div>
+        <div><div class="k">Probable cause</div>${b.cause}<div class="k" style="margin-top:12px">Action</div>${b.action}</div>
+        <div style="grid-column:1/-1"><div class="k">Automation rule</div>${b.rule}</div>
+      </div></td>`;
+      tr.after(d); tr.setAttribute('aria-expanded','true');
+    };
+    tr.addEventListener('click',toggle);
+    tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
+  });
+  const total = BREAKS.filter(b=>b.open).length;
+  $('#queue-caption').textContent = `${rows.length} of ${BREAKS.length} items shown. Click a row for detail.`;
+}
+
+/* ============================================================
+   RECON: Transfers
+   ============================================================ */
+function renderTransfers(){
+  const rows = TRANSFERS.slice().sort((a,b)=> (b.stall-a.stall) || (a.stage-b.stage));
+  $('#transfers tbody').innerHTML = rows.map(t=>{
+    const el = hoursAgo(t.last)*60;
+    const pipe = STAGES.map((s,i)=>{
+      let cls='';
+      if (i<t.stage) cls='done';
+      else if (i===t.stage) cls = t.stall?'stall':'cur';
+      if (t.stage===4) cls='done';
+      return `<div class="st ${cls}">${s}</div>`;
+    }).join('');
+    const status = t.stage===4 ? '<span class="badge ok">Settled</span>' : t.stall ? '<span class="badge high">Flagged</span>' : '<span class="badge low">In flight</span>';
+    return `<tr>
+      <td class="mono">${t.ref}</td><td class="mono">${t.asset}</td><td class="num">${fmtA(t.amt,t.asset)}</td><td>${t.from}</td><td>${t.to}</td><td>${t.net}</td>
+      <td><div class="pipe">${pipe}</div></td>
+      <td><div>${t.lastLabel}</div><div class="calc">${tET(t.last)}</div></td>
+      <td class="mono ${t.stall?'neg':''}">${t.stage===4?'':Math.round(el)+' min'}<div class="calc">median ${t.median} min</div></td>
+      <td>${status}<div class="calc" style="white-space:normal;margin-top:3px">${t.note}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   RECON: Report and automation strip
+   ============================================================ */
+function buildReport(){
+  const open = BREAKS.filter(b=>b.open);
+  const by = s => open.filter(b=>b.sev===s);
+  const line = b => `  ${b.id}  ${b.venue.padEnd(8)} ${b.type.padEnd(20)} ${usd(b.diffUsd).padStart(11)}  ${b.status.replace('Linked to ','Linked ')}`;
+  const flagged = TRANSFERS.filter(t=>t.stall);
+  const resolved = BREAKS.filter(b=>!b.open);
+  const desk = open.filter(b=>['Trades','Positions'].includes(b.cat));
+  const treas = open.filter(b=>b.owner==='Treasury');
+  const other = open.filter(b=>!desk.includes(b) && !treas.includes(b));
+  return [
+`DAILY EXCEPTION REPORT`,
+`Run 26 Aug 2026 07:00 ET   Prepared by J. Thom, Middle Office`,
+`Distribution: Trading, Treasury, Risk`,
+``,
+`SUMMARY`,
+`  Records reconciled     ${fmt(RECORD_TOTAL,0)} across ${EXCH_COUNT} exchanges, ${CHAINS.length} chains`,
+`  Open breaks            ${open.length}  (critical ${by('critical').length}, high ${by('high').length}, medium ${by('medium').length}, low ${by('low').length})`,
+`  Gross exception value  ${usd(grossExceptionValue())}`,
+`  Resolved this run      ${resolved.length}`,
+`  Within tolerance       ${WITHIN_TOL.length} auto-closed`,
+`  Transfers in flight    ${TRANSFERS.filter(t=>t.stage<4).length}, ${flagged.length} flagged`,
+``,
+`REQUIRES DESK ATTENTION`,
+...desk.map(line),
+``,
+`TREASURY`,
+...treas.map(line),
+...flagged.map(t=>`  ${t.ref}      ${t.asset} ${fmtA(t.amt,t.asset)} ${t.from} to ${t.to}, uncredited ${Math.round(hoursAgo(t.last)*60)} min`),
+``,
+`OTHER OPEN`,
+...other.map(line),
+``,
+`ACTIONS BEFORE NEXT RUN`,
+`  1. Book OKX 0.42 BTC fill (B-0826-01); desk to confirm hedge.`,
+`  2. Book Deribit 21AUG26 settlement (B-0826-04); check other strikes.`,
+`  3. OKX ticket for 2.5M USDT (T-01); escalate by 08:00 ET.`,
+`  4. Desk to identify 750k USDT inbound (B-0826-09); compliance by 14:00 ET.`,
+`  5. Update Binance fee tier (B-0826-05).`,
+``,
+`Breaks over 24 h: ${open.filter(b=>b.ageH>24).map(b=>b.id).join(', ') || 'none'}.`
+  ].join('\n');
+}
+
+function renderAuto(){
+  const types = [
+    {t:'Trades after a feed gap', m:'Compare venue trade export to the blotter by hand.', a:'Auto-replay fills over any gap, diff on trade ID.'},
+    {t:'Expiries and settlements', m:'Check the calendar Fridays, book by hand.', a:'Job books settlement at 08:05 UTC, flags open expired lines.'},
+    {t:'Transfers', m:'Shared sheet. Stuck deposits found at margin call.', a:'Five-state pipeline, timer per leg, alert at 2x median.'},
+    {t:'On-chain inbounds', m:'Block explorer per wallet vs treasury sheet.', a:'Every inbound matched to an expected settlement. Unmatched alerts immediately.'},
+  ];
+  $('#auto').innerHTML = types.map(x=>`<div class="auto-item"><h4>${x.t}</h4><div class="row"><b>Manual</b><span>${x.m}</span></div><div class="row"><b>Automated</b><span>${x.a}</span></div></div>`).join('');
+}
+
+/* ============================================================
+   FINANCING
+   ============================================================ */
+function accrue(p, r, days, basis){ return p*r*days/basis; }
+function unitFmt(n, asset){ return fmtA(n, asset); }
+function facUsd(f, n){ return n*priceOf(f.asset); }
+const fmtI = (n, asset) => fmtA(n, (asset==='USDT'||asset==='USDC')?'USD':asset);
+
+function accruedFor(f){
+  return f.draws.map(d=>{
+    const from = new Date(d.credited) > new Date(f.paidThrough) ? d.credited : f.paidThrough;
+    const days = dayDiff(from, ASOF);
+    return {d, from, days, acc: accrue(d.amt, f.rate, days, f.basis)};
+  });
+}
+
+function renderFacilities(){
+  let totalSize=0,totalDrawn=0,totalAccUsd=0,nearest=null;
+  $('#facilities tbody').innerHTML = FACILITIES.map(f=>{
+    const drawn = f.draws.reduce((s,d)=>s+d.amt,0);
+    const util = drawn/f.size;
+    const acc = accruedFor(f).reduce((s,x)=>s+x.acc,0);
+    totalSize += facUsd(f,f.size); totalDrawn += facUsd(f,drawn); totalAccUsd += facUsd(f,acc);
+    let status = '<span class="badge ok">Current</span>';
+    if (/^\d/.test(f.maturity)){
+      const d = dayDiff(ASOF, f.maturity);
+      if (d<=35) status = `<span class="badge medium">${d} d left</span>`;
+      if (!nearest || d<nearest.d) nearest={d,f};
+    }
+    return `<tr>
+      <td><b>${f.lender}</b><div class="calc">${f.id} · ${f.term} · ${f.network}</div></td>
+      <td class="mono">${f.asset}</td>
+      <td class="num">${unitFmt(f.size,f.asset)}</td>
+      <td class="num">${unitFmt(drawn,f.asset)}<div class="calc">${usd(facUsd(f,drawn))}</div></td>
+      <td class="num">${unitFmt(f.size-drawn,f.asset)}</td>
+      <td><div class="util ${util>0.75?'high':''}"><i style="width:${(util*100).toFixed(1)}%"></i></div><div class="calc">${(util*100).toFixed(1)}%</div></td>
+      <td class="mono">${(f.rate*100).toFixed(2)}% ACT/${f.basis}${f.rateNote?`<div class="calc" style="white-space:normal">${f.rateNote}</div>`:''}</td>
+      <td>${f.freq}</td>
+      <td class="mono">${/^\d/.test(f.maturity)?dLong(f.maturity):f.maturity}</td>
+      <td class="num">${fmtI(acc,f.asset)} ${f.asset}<div class="calc">${usd(facUsd(f,acc))}</div></td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+  window.__fin = {totalSize,totalDrawn,totalAccUsd,nearest};
+}
+
+function renderDrawdowns(){
+  const F1 = FACILITIES[0];
+  const ex = accruedFor(F1)[1];
+  $('#worked').innerHTML = `
+    <div class="k">Example</div><div>${F1.lender}, draw D2. Requested ${dLong(ex.d.requested)}, credited ${dLong(ex.d.credited)}. Accrues from credit date.</div>
+    <div class="k">Formula</div><div class="v">principal × rate × days ÷ basis</div>
+    <div class="k">Figures</div><div class="v">${fmt(ex.d.amt,0)} × ${(F1.rate*100).toFixed(2)}% × ${ex.days} ÷ ${F1.basis}</div>
+    <div class="k">Accrued to 26 Aug</div><div class="v"><b>${fmt(ex.acc)} ${F1.asset}</b></div>
+    <div class="k">Why it matters</div><div>Accruing from the request date adds one day, ${fmt(accrue(ex.d.amt,F1.rate,1,F1.basis))} ${F1.asset}. That is the August invoice difference below.</div>`;
+  let rows=[];
+  FACILITIES.forEach(f=>{
+    accruedFor(f).forEach(x=>{
+      rows.push(`<tr>
+        <td><b>${f.lender}</b><div class="calc">${f.id}</div></td>
+        <td class="mono">${x.d.n}</td>
+        <td class="mono">${dLong(x.d.credited)}${x.d.requested!==x.d.credited?`<div class="calc">requested ${dShort(x.d.requested)}</div>`:''}</td>
+        <td class="num">${unitFmt(x.d.amt,f.asset)} ${f.asset}</td>
+        <td class="mono">${(f.rate*100).toFixed(2)}%</td>
+        <td class="mono">${dLong(x.from)}</td>
+        <td class="num">${x.days}</td>
+        <td class="calc">${unitFmt(x.d.amt,f.asset)} × ${(f.rate*100).toFixed(2)}% × ${x.days}/${f.basis}</td>
+        <td class="num"><b>${fmtI(x.acc,f.asset)} ${f.asset}</b><div class="calc">${usd(facUsd(f,x.acc))}</div></td>
+      </tr>`);
+    });
+  });
+  $('#drawdowns tbody').innerHTML = rows.join('');
+}
+
+function renderPayments(){
+  const F1=FACILITIES[0], F2=FACILITIES[1], F3=FACILITIES[2], F4=FACILITIES[3];
+  // Month-end invoices, received 25 Aug, project accrual through 31 Aug (31-day period).
+  const m_int = accrue(12000000,F1.rate,31,360) + accrue(6000000,F1.rate,dayDiff('2026-08-15','2026-09-01'),360);
+  const m_len = accrue(12000000,F1.rate,31,360) + accrue(6000000,F1.rate,dayDiff('2026-08-14','2026-09-01'),360);
+  const h_int = accrue(250,F2.rate,31,365);
+  const a_int = accrue(12500000,F3.rate,31,360);
+  const a_len = accrue(12500000,F3.rate,31,365);
+  const nMat = accrue(3200,F4.rate,92,365);
+  const chk = (cls,txt) => `<span class="check ${cls}">${txt}</span>`;
+  const ver = (wl,net,appr,apprCls) => chk(wl==='y'?'y':'n', 'Whitelist: '+(wl==='y'?'match':'NO MATCH')) + chk(net==='y'?'y':'n', 'Network: '+(net==='y'?'match':'MISMATCH')) + chk(apprCls, 'Approvals: '+appr);
+  const diffCell = (len, int, unit, cause, noInv) => {
+    if (len===null) return `${noInv?`<span class="calc">${noInv}</span>`:''}<div style="margin-top:3px">${cause}</div>`;
+    const d = len-int;
+    const u = unit==='BTC'?'BTC':unit==='ETH'?'ETH':'USD';
+    const hd = Math.abs(d)<1e-6 ? `<span class="pos" style="font-family:var(--mono)">0 ${unit}</span>` : `<span class="neg" style="font-family:var(--mono);font-weight:600">${d>0?'+':''}${fmtA(d,u)} ${unit}</span> <span class="calc">(${usd(Math.abs(d)*priceOf(unit))}, lender ${d>0?'over':'under'})</span>`;
+    return `${hd}<div style="margin-top:3px">${cause}</div>`;
+  };
+  const P = [
+    {due:'2026-08-31', f:F1, type:'Interest, August', period:'1 to 31 Aug, invoice received 25 Aug', int:m_int, len:m_len, unit:'USDT',
+     cause:'Lender accrued D2 from request date (14 Aug). Agreement accrues from credit date (15 Aug). One day on 6,000,000 at 9.25%.',
+     dest:F1.addr+' · '+F1.network, wl:'y', net:'y', appr:'0 of 2', apprCls:'p',
+     status:'<span class="badge hold">Hold</span>', note:'Query sent 25 Aug. Hold until revised invoice matches.'},
+    {due:'2026-08-31', f:F3, type:'Interest, August', period:'1 to 31 Aug, invoice received 25 Aug', int:a_int, len:a_len, unit:'USDC',
+     cause:'Lender used ACT/365. Agreement is ACT/360. Flagged even though it favors us, to avoid a true-up next period.',
+     dest:F3.addr+' · '+F3.network, wl:'y', net:'y', appr:'1 of 2', apprCls:'p',
+     status:'<span class="badge medium">Flagged to lender</span>', note:'Raised 25 Aug. Paying the ACT/360 amount.'},
+    {due:'2026-09-01', f:F2, type:'Interest, August, in kind', period:'1 to 31 Aug, invoice received 25 Aug', int:h_int, len:h_int, unit:'BTC',
+     cause:'Matched to internal accrual.',
+     dest:F2.addr+' · '+F2.network, wl:'y', net:'y', appr:'2 of 2', apprCls:'y',
+     status:'<span class="badge ok">Scheduled</span>', note:'Broadcast 09:00 ET 1 Sep.'},
+    {due:'2026-09-15', f:F1, type:'Partial principal', period:'Scheduled repayment', int:3000000, len:null, unit:'USDT',
+     cause:'Lender email of 24 Aug gives a Tron address. Agreement whitelists '+F1.addr+' on Ethereum.',
+     noInv:'', dest:'TR7N…kQ4c · Tron, per lender email', wl:'n', net:'n', appr:'Not started', apprCls:'p',
+     status:'<span class="badge hold">Hold</span>', note:'Hold pending callback verification with Meridian.'},
+    {due:'2026-09-23', f:F4, type:'Rollover decision', period:'Seven-day notice for 30 Sep maturity', int:null, len:null, unit:'',
+     cause:'', dest:'', status:'<span class="badge navy">Decision</span>', note:'Confirm repay or roll by 23 Sep.'},
+    {due:'2026-09-30', f:F4, type:'Maturity, principal and interest', period:'1 Jul to 30 Sep, 92 days, invoice expected ~25 Sep', int:3200+nMat, len:null, unit:'ETH',
+     cause:`3,200 principal plus ${fmtA(nMat,'ETH')} interest (92 days). Fund the treasury wallet by 29 Sep.`,
+     noInv:'not yet invoiced', dest:F4.addr+' · '+F4.network, wl:'y', net:'y', appr:'Not started', apprCls:'p',
+     status:'<span class="badge medium">Upcoming</span>', note:'Nearest maturity.'},
+  ];
+  $('#payments tbody').innerHTML = P.map(p=>`<tr>
+    <td class="mono">${dLong(p.due)}<div class="calc">in ${dayDiff(ASOF,p.due)} d</div></td>
+    <td><b>${p.f.lender}</b><div class="calc">${p.f.asset} · ACT/${p.f.basis}</div></td>
+    <td>${p.type}<div class="calc" style="white-space:normal">${p.period}</div></td>
+    <td class="num">${p.int===null?'':fmtI(p.int,p.unit)+' '+p.unit}</td>
+    <td class="num">${p.len===null?'':fmtI(p.len,p.unit)+' '+p.unit}</td>
+    <td style="max-width:340px">${p.int===null?'':diffCell(p.len,p.int,p.unit,p.cause,p.noInv)}</td>
+    <td>${p.dest?`<div class="calc" style="margin-bottom:4px">${p.dest}</div>${ver(p.wl,p.net,p.appr,p.apprCls)}`:''}</td>
+    <td>${p.status}<div class="calc" style="white-space:normal;margin-top:3px;max-width:260px">${p.note}</div></td>
+  </tr>`).join('');
+  window.__fin.invoiceBreaks = P.filter(p=>p.len!==null && Math.abs(p.len-p.int)>1e-6).length;
+  window.__fin.invoicesReceived = P.filter(p=>p.len!==null).length;
+  window.__fin.holds = P.filter(p=>p.status.includes('Hold')).length;
+}
+
+function renderFinKpis(){
+  const F = window.__fin;
+  const wRate = FACILITIES.reduce((s,f)=>s+facUsd(f,f.draws.reduce((a,d)=>a+d.amt,0))*f.rate,0)/F.totalDrawn;
+  $('#fin-kpis').innerHTML = `
+    <div class="kpi"><div class="lab">Drawn / available</div><div class="val">${usd(F.totalDrawn)}</div><div class="sub">${usd(F.totalSize-F.totalDrawn)} available of ${usd(F.totalSize)} committed, ${((F.totalDrawn/F.totalSize)*100).toFixed(1)}% utilized</div></div>
+    <div class="kpi warn"><div class="lab">Accrued, unpaid</div><div class="val">${usd(F.totalAccUsd)}</div><div class="sub">since last payment date, ${FACILITIES.length} facilities, weighted rate ${(wRate*100).toFixed(2)}%</div></div>
+    <div class="kpi ${F.invoiceBreaks?'crit':'ok'}"><div class="lab">Invoice exceptions</div><div class="val">${F.invoiceBreaks}</div><div class="sub">of ${F.invoicesReceived} month-end invoices received</div></div>
+    <div class="kpi ${F.holds?'crit':''}"><div class="lab">Payments on hold</div><div class="val">${F.holds}</div><div class="sub">nearest maturity: ${F.nearest.f.lender.split(' ')[0]}, ${dLong(F.nearest.f.maturity)} (${F.nearest.d} d)</div></div>`;
+  $('#tab-fin-count').textContent = F.holds + ' on hold';
+}
+
+/* ============================================================
+   TABS and INIT
+   ============================================================ */
+function initTabs(){
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>{ x.setAttribute('aria-selected', x===t); document.getElementById(x.getAttribute('aria-controls')).hidden = x!==t; });
+    if (history.replaceState) history.replaceState(null,'','#'+t.id.replace('tab-',''));
+  }));
+  if (location.hash==='#fin') document.getElementById('tab-fin').click();
+}
+
+renderReconKpis(); renderMatrix(); renderFilters(); renderBreaks(); renderTransfers(); renderAuto();
+$('#report').textContent = buildReport();
+$('#copy').addEventListener('click',async()=>{
+  try { await navigator.clipboard.writeText($('#report').textContent); $('#copy').textContent='Copied'; setTimeout(()=>$('#copy').textContent='Copy report',1500); }
+  catch(e){ $('#copy').textContent='Select and copy'; }
+});
+renderFacilities(); renderDrawdowns(); renderPayments(); renderFinKpis();
+initTabs();
+</script>
+</body>
+</html>
